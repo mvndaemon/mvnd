@@ -289,7 +289,8 @@ public class DaemonParameters {
     public DaemonParameters cd(Path newUserDir) {
         return new DaemonParameters(new PropertiesBuilder()
                 .putAll(this.properties)
-                .put(Environment.USER_DIR, newUserDir));
+                .put(Environment.USER_DIR, newUserDir)
+                .put(Environment.MAVEN_MULTIMODULE_PROJECT_DIRECTORY, newUserDir));
     }
 
     public Duration keepAlive() {

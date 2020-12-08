@@ -25,8 +25,6 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -102,9 +100,6 @@ import org.mvndaemon.mvnd.cache.invalidating.InvalidatingPluginArtifactsCache;
 import org.mvndaemon.mvnd.cache.invalidating.InvalidatingPluginRealmCache;
 import org.mvndaemon.mvnd.cache.invalidating.InvalidatingProjectArtifactsCache;
 import org.mvndaemon.mvnd.common.Environment;
-import org.mvndaemon.mvnd.execution.BuildResumptionPersistenceException;
-import org.mvndaemon.mvnd.execution.DefaultBuildResumptionAnalyzer;
-import org.mvndaemon.mvnd.execution.DefaultBuildResumptionDataRepository;
 import org.mvndaemon.mvnd.logging.internal.Slf4jLoggerManager;
 import org.mvndaemon.mvnd.logging.smart.BuildEventListener;
 import org.mvndaemon.mvnd.logging.smart.LoggingExecutionListener;
@@ -147,8 +142,6 @@ public class DaemonMavenCli {
     private static final String MVN_MAVEN_CONFIG = ".mvn/maven.config";
 
     public static final String STYLE_COLOR_PROPERTY = "style.color";
-
-    public static final String RESUME = "r";
 
     private final Slf4jLoggerManager plexusLoggerManager;
 
@@ -315,10 +308,7 @@ public class DaemonMavenCli {
     }
 
     private CLIManager newCLIManager() {
-        CLIManager cliManager = new CLIManager();
-        cliManager.options.addOption(Option.builder(RESUME).longOpt("resume").desc("Resume reactor from " +
-                "the last failed project, using the resume.properties file in the build directory").build());
-        return cliManager;
+        return new CLIManager();
     }
 
     private CommandLine cliMerge(CommandLine mavenArgs, CommandLine mavenConfig) {
@@ -786,18 +776,7 @@ public class DaemonMavenCli {
                 }
             }
 
-            boolean canResume = new DefaultBuildResumptionAnalyzer().determineBuildResumptionData(result).map(resumption -> {
-                try {
-                    Path directory = Paths.get(request.getBaseDirectory()).resolve("target");
-                    new DefaultBuildResumptionDataRepository().persistResumptionData(directory, resumption);
-                    return true;
-                } catch (BuildResumptionPersistenceException e) {
-                    slf4jLogger.warn("Could not persist build resumption data", e);
-                }
-                return false;
-            }).orElse(false);
-
-            if (canResume) {
+            if (result.canResume()) {
                 logBuildResumeHint("mvn <args> -r");
             } else if (!failedProjects.isEmpty()) {
                 List<MavenProject> sortedProjects = result.getTopologicallySortedProjects();
@@ -820,8 +799,6 @@ public class DaemonMavenCli {
                 return 1;
             }
         } else {
-            Path directory = Paths.get(request.getBaseDirectory()).resolve("target");
-            new DefaultBuildResumptionDataRepository().removeResumptionData(directory);
             return 0;
         }
     }
@@ -1090,7 +1067,7 @@ public class DaemonMavenCli {
         }
 
         boolean noSnapshotUpdates = false;
-        if (commandLine.hasOption(CLIManager.SUPRESS_SNAPSHOT_UPDATES)) {
+        if (commandLine.hasOption(CLIManager.SUPPRESS_SNAPSHOT_UPDATES)) {
             noSnapshotUpdates = true;
         }
 
@@ -1213,13 +1190,12 @@ public class DaemonMavenCli {
             request.setBaseDirectory(request.getPom().getParentFile());
         }
 
-        if (commandLine.hasOption(RESUME)) {
-            new DefaultBuildResumptionDataRepository()
-                    .applyResumptionData(request, Paths.get(request.getBaseDirectory()).resolve("target"));
-        }
-
         if (commandLine.hasOption(CLIManager.RESUME_FROM)) {
             request.setResumeFrom(commandLine.getOptionValue(CLIManager.RESUME_FROM));
+        }
+
+        if (commandLine.hasOption(CLIManager.RESUME)) {
+            request.setResume(true);
         }
 
         if (commandLine.hasOption(CLIManager.PROJECT_LIST)) {

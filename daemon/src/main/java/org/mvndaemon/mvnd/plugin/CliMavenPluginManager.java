@@ -51,7 +51,6 @@ import org.apache.maven.plugin.DebugConfigurationListener;
 import org.apache.maven.plugin.ExtensionRealmCache;
 import org.apache.maven.plugin.InvalidPluginDescriptorException;
 import org.apache.maven.plugin.MavenPluginManager;
-import org.apache.maven.plugin.MavenPluginValidator;
 import org.apache.maven.plugin.Mojo;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoNotFoundException;
@@ -234,18 +233,31 @@ public class CliMavenPluginManager
             throw new PluginDescriptorParsingException(plugin, pluginFile.getAbsolutePath(), e);
         }
 
-        MavenPluginValidator validator = new MavenPluginValidator(pluginArtifact);
+        List<String> errors = new ArrayList<>();
+        validate(pluginArtifact, pluginDescriptor, errors);
 
-        validator.validate(pluginDescriptor);
-
-        if (validator.hasErrors()) {
+        if (!errors.isEmpty()) {
             throw new InvalidPluginDescriptorException(
-                    "Invalid plugin descriptor for " + plugin.getId() + " (" + pluginFile + ")", validator.getErrors());
+                    "Invalid plugin descriptor for " + plugin.getId() + " (" + pluginFile + ")", errors);
         }
 
         pluginDescriptor.setPluginArtifact(pluginArtifact);
 
         return pluginDescriptor;
+    }
+
+    private void validate(Artifact pluginArtifact, PluginDescriptor pluginDescriptor, List<String> errors) {
+        if (!pluginArtifact.getGroupId().equals(pluginDescriptor.getGroupId())) {
+            errors.add("Plugin's descriptor contains the wrong group ID: " + pluginDescriptor.getGroupId());
+        }
+
+        if (!pluginArtifact.getArtifactId().equals(pluginDescriptor.getArtifactId())) {
+            errors.add("Plugin's descriptor contains the wrong artifact ID: " + pluginDescriptor.getArtifactId());
+        }
+
+        if (!pluginArtifact.getBaseVersion().equals(pluginDescriptor.getVersion())) {
+            errors.add("Plugin's descriptor contains the wrong version: " + pluginDescriptor.getVersion());
+        }
     }
 
     private String getPluginDescriptorLocation() {

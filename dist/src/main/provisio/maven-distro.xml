@@ -20,7 +20,7 @@
     <artifactSet to="/mvn">
         <artifact id="org.apache.maven:apache-maven:tar.gz:bin">
             <unpack useRoot="false"
-                    excludes="lib/*slf4j*,conf/logging/*,lib/maven-slf4j-provider*,bin/mvn*,lib/jansi-*.jar,lib/jansi-native/*"/>
+                    excludes="conf/logging/*,lib/maven-slf4j-provider*,bin/mvn*,lib/jansi-*.jar,lib/jansi-native/*"/>
         </artifact>
     </artifactSet>
 
@@ -34,7 +34,10 @@
             <exclusion id="*:guava"/>
             <exclusion id="*:guice"/>
             <exclusion id="*:javax.inject"/>
+            <exclusion id="*:jcl-over-slf4j"/>
+            <exclusion id="*:jul-to-slf4j"/>
             <exclusion id="*:jsr250-api"/>
+            <exclusion id="*:log4j-over-slf4j"/>
             <exclusion id="*:maven-artifact"/>
             <exclusion id="*:maven-builder-support"/>
             <exclusion id="*:maven-core"/>
@@ -59,6 +62,7 @@
             <exclusion id="*:plexus-sec-dispatcher"/>
             <exclusion id="*:plexus-utils"/>
             <exclusion id="*:plexus-container-default"/>
+            <exclusion id="*:slf4j-api"/>
         </artifact>
         <artifact id="org.mvndaemon.mvnd:mvnd-client:${project.version}">
             <exclusion id="*:*"/>
